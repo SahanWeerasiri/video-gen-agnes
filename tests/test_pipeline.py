@@ -104,6 +104,87 @@ class TestZeroCostVideoPipeline(unittest.TestCase):
         self.mock_frame_gen.generate_frames.assert_not_called()
         self.mock_compiler.compile_video.assert_not_called()
 
+    def test_run_native_video_single_clip(self) -> None:
+        self.mock_client.create_video_task.return_value = {
+            "id": "task_1",
+            "video_id": "vid_1",
+            "status": "queued",
+        }
+        self.mock_client.wait_for_video.return_value = {
+            "status": "completed",
+            "progress": 100,
+            "url": "https://example.com/clip.mp4",
+        }
+        def fake_download(url: str, output_path: Path) -> Path:
+            p = Path(output_path)
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.touch()
+            return p
+        self.mock_client.download_video.side_effect = fake_download
+
+        result = self.pipeline.run(
+            prompt="A futuristic neon car speeding at night",
+            num_scenes=1,
+            engine="native_video",
+            video_seconds="6",
+            video_size="720P",
+            video_aspect_ratio="16:9",
+        )
+
+        self.assertIsNotNone(result.video_path)
+        self.assertEqual(result.total_duration, 6.0)
+        self.assertTrue(result.video_path.exists())
+        self.mock_client.create_video_task.assert_called_once_with(
+            prompt="A futuristic neon car speeding at night",
+            mode="text",
+            seconds="6",
+            size="720P",
+            aspect_ratio="16:9",
+        )
+        self.mock_client.wait_for_video.assert_called_once()
+        self.mock_client.download_video.assert_called_once()
+
+    def test_run_native_video_multi_scenes(self) -> None:
+        mock_storyboard = Storyboard(
+            title="Space Journey",
+            summary="Journey through the cosmos",
+            scenes=[
+                Scene(index=1, description="Rocket takeoff", visual_prompt="P1", duration=4.0),
+                Scene(index=2, description="Orbiting Earth", visual_prompt="P2", duration=5.0),
+            ],
+        )
+        self.mock_storyboard_gen.generate.return_value = mock_storyboard
+        self.mock_client.create_video_task.side_effect = [
+            {"id": "t1", "video_id": "v1"},
+            {"id": "t2", "video_id": "v2"},
+        ]
+        self.mock_client.wait_for_video.side_effect = [
+            {"status": "completed", "url": "https://example.com/c1.mp4"},
+            {"status": "completed", "url": "https://example.com/c2.mp4"},
+        ]
+        def fake_download(url: str, output_path: Path) -> Path:
+            p = Path(output_path)
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.touch()
+            return p
+        self.mock_client.download_video.side_effect = fake_download
+        def fake_concat(clip_paths: list[Path], output_file: Path) -> Path:
+            output_file.touch()
+            return output_file
+        self.mock_compiler.concat_clips.side_effect = fake_concat
+
+        result = self.pipeline.run(
+            prompt="Space voyage documentary",
+            num_scenes=2,
+            engine="native_video",
+        )
+
+        self.assertIsNotNone(result.video_path)
+        self.assertEqual(result.total_duration, 9.0)
+        self.assertEqual(self.mock_client.create_video_task.call_count, 2)
+        self.assertEqual(self.mock_client.wait_for_video.call_count, 2)
+        self.mock_compiler.concat_clips.assert_called_once()
+
 
 class TestCLI(unittest.TestCase):
     """Test CLI argument parsing and execution."""
@@ -114,6 +195,9 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(args.scenes, 4)
         self.assertEqual(args.duration, 4.0)
         self.assertEqual(args.size, "1024x768")
+        self.assertEqual(args.engine, "zero_cost")
+        self.assertEqual(args.video_size, "720P")
+        self.assertEqual(args.video_seconds, "5")
         self.assertFalse(args.no_motion)
         self.assertFalse(args.dry_run)
 

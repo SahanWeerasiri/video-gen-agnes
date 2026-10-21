@@ -53,9 +53,30 @@ class ZeroCostVideoPipeline:
         enable_motion: bool = True,
         use_continuity: bool = True,
         dry_run: bool = False,
+        engine: Optional[str] = None,
+        video_seconds: Optional[str] = None,
+        video_size: Optional[str] = None,
+        video_aspect_ratio: Optional[str] = None,
+        video_mode: Optional[str] = None,
         on_status: Optional[Callable[[str], None]] = None,
     ) -> PipelineResult:
-        """Execute the full video generation pipeline."""
+        """Execute the video generation pipeline using either zero-cost or native Agnes Video engine."""
+        target_engine = engine or self.config.engine
+
+        if target_engine == "native_video":
+            return self.run_native_video(
+                prompt=prompt,
+                num_scenes=num_scenes,
+                style=style,
+                output_name=output_name,
+                video_seconds=video_seconds,
+                video_size=video_size,
+                video_aspect_ratio=video_aspect_ratio,
+                video_mode=video_mode,
+                dry_run=dry_run,
+                on_status=on_status,
+            )
+
         out_dir = self.config.output_dir
         out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -120,7 +141,162 @@ class ZeroCostVideoPipeline:
             total_duration=total_duration,
         )
 
+    def run_native_video(
+        self,
+        prompt: str,
+        num_scenes: int = 1,
+        style: Optional[str] = None,
+        output_name: str = "video.mp4",
+        video_seconds: Optional[str] = None,
+        video_size: Optional[str] = None,
+        video_aspect_ratio: Optional[str] = None,
+        video_mode: Optional[str] = None,
+        dry_run: bool = False,
+        on_status: Optional[Callable[[str], None]] = None,
+    ) -> PipelineResult:
+        """Generate high-fidelity video directly using the native Agnes Video 2.5 API."""
+        out_dir = self.config.output_dir
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+        sec = str(video_seconds or self.config.video_seconds)
+        size = video_size or self.config.video_size
+        aspect = video_aspect_ratio or self.config.video_aspect_ratio
+        mode = video_mode or self.config.video_mode
+
+        if num_scenes <= 1:
+            # Direct prompt-to-video single clip
+            from video_gen.storyboard import Scene, Storyboard
+            storyboard = Storyboard(
+                title=prompt[:40],
+                summary=prompt,
+                scenes=[
+                    Scene(
+                        index=1,
+                        description=prompt,
+                        visual_prompt=prompt,
+                        camera_motion="ai_diffusion",
+                        duration=float(sec),
+                    )
+                ],
+            )
+            storyboard_path = out_dir / "storyboard.json"
+            with open(storyboard_path, "w", encoding="utf-8") as f:
+                json.dump({
+                    "title": storyboard.title,
+                    "summary": storyboard.summary,
+                    "scenes": [asdict(s) for s in storyboard.scenes],
+                }, f, indent=2)
+
+            if dry_run:
+                self._notify(on_status, f"Dry run complete. Native video task planned for {sec}s.")
+                return PipelineResult(
+                    video_path=None,
+                    storyboard=storyboard,
+                    frames=[],
+                    total_duration=float(sec),
+                )
+
+            self._notify(on_status, f"Submitting native video task to agnes-video-2.5 ({sec}s, {size}, {aspect})...")
+            task = self.client.create_video_task(
+                prompt=prompt,
+                mode=mode,
+                seconds=sec,
+                size=size,
+                aspect_ratio=aspect,
+            )
+            video_id = task["video_id"]
+
+            self._notify(on_status, f"Agnes Video 2.5 task created (ID: {video_id}). Polling progress...")
+            result_info = self.client.wait_for_video(
+                video_id=video_id,
+                status_callback=lambda info: self._notify(
+                    on_status,
+                    f"Agnes Video 2.5 progress: {info.get('progress', 0)}% ({info.get('status')})",
+                ),
+            )
+
+            video_url = result_info["url"]
+            final_video_path = out_dir / output_name
+            self._notify(on_status, f"Downloading generated video from Agnes cloud...")
+            self.client.download_video(url=video_url, output_path=final_video_path)
+            self._notify(on_status, f"Video generated successfully at: {final_video_path}")
+
+            return PipelineResult(
+                video_path=final_video_path,
+                storyboard=storyboard,
+                frames=[],
+                total_duration=float(sec),
+            )
+
+        # Multi-scene native video clips stitched together
+        self._notify(on_status, f"Planning {num_scenes}-scene storyboard using agnes-2.5-flash ($0)...")
+        storyboard = self.storyboard_gen.generate(
+            prompt=prompt,
+            num_scenes=num_scenes,
+            style=style,
+            duration_per_scene=float(sec),
+        )
+        storyboard_path = out_dir / "storyboard.json"
+        with open(storyboard_path, "w", encoding="utf-8") as f:
+            json.dump({
+                "title": storyboard.title,
+                "summary": storyboard.summary,
+                "scenes": [asdict(s) for s in storyboard.scenes],
+            }, f, indent=2)
+
+        total_duration = sum(s.duration for s in storyboard.scenes)
+
+        if dry_run:
+            self._notify(on_status, f"Dry run complete. Storyboard saved to {storyboard_path}")
+            return PipelineResult(
+                video_path=None,
+                storyboard=storyboard,
+                frames=[],
+                total_duration=total_duration,
+            )
+
+        clips: list[Path] = []
+        for scene in storyboard.scenes:
+            scene_sec = str(max(4, min(12, int(round(scene.duration)))))
+            self._notify(
+                on_status,
+                f"Generating Scene {scene.index}/{len(storyboard.scenes)} via agnes-video-2.5: {scene.description[:40]}...",
+            )
+            task = self.client.create_video_task(
+                prompt=scene.visual_prompt,
+                mode=mode,
+                seconds=scene_sec,
+                size=size,
+                aspect_ratio=aspect,
+            )
+            result_info = self.client.wait_for_video(
+                video_id=task["video_id"],
+                status_callback=lambda info: self._notify(
+                    on_status,
+                    f"Scene {scene.index} progress: {info.get('progress', 0)}% ({info.get('status')})",
+                ),
+            )
+            clip_path = out_dir / f"scene_{scene.index:03d}.mp4"
+            self.client.download_video(url=result_info["url"], output_path=clip_path)
+            clips.append(clip_path)
+
+        final_video_path = out_dir / output_name
+        self._notify(on_status, "Stitching multi-scene video clips into final MP4 using FFmpeg...")
+        self.compiler.concat_clips(clip_paths=clips, output_file=final_video_path)
+        self._notify(on_status, f"Video generated successfully at: {final_video_path}")
+
+        return PipelineResult(
+            video_path=final_video_path,
+            storyboard=storyboard,
+            frames=[],
+            total_duration=total_duration,
+        )
+
     def _notify(self, callback: Optional[Callable[[str], None]], message: str) -> None:
         logger.info(message)
         if callback:
             callback(message)
+
+
+# Alias for backward and forward compatibility
+VideoPipeline = ZeroCostVideoPipeline

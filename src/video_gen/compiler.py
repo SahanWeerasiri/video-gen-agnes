@@ -203,6 +203,37 @@ class FFmpegCompiler:
 
         return output_file
 
+    def concat_clips(self, clip_paths: list[Path], output_file: Path) -> Path:
+        """Concatenate multiple video clips into a single continuous video."""
+        if not clip_paths:
+            raise ValueError("No video clips provided for concatenation.")
+        output_file = output_file.resolve()
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+
+        if len(clip_paths) == 1:
+            shutil.copyfile(clip_paths[0], output_file)
+            return output_file
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            concat_list = temp_path / "concat_clips.txt"
+            with open(concat_list, "w", encoding="utf-8") as f:
+                for clip in clip_paths:
+                    f.write(f"file '{clip.resolve()}'\n")
+
+            cmd = [
+                self.ffmpeg_path,
+                "-y",
+                "-f", "concat",
+                "-safe", "0",
+                "-i", str(concat_list),
+                "-c", "copy",
+                str(output_file),
+            ]
+            self._run_ffmpeg(cmd, desc="Concatenating video clips")
+
+        return output_file
+
     def _run_ffmpeg(self, cmd: list[str], desc: str) -> None:
         """Execute FFmpeg command and raise FFmpegError with stderr details on failure."""
         logger.debug("Running FFmpeg: %s", " ".join(cmd))

@@ -58,6 +58,40 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
         help="Video frame rate.",
     )
     parser.add_argument(
+        "--engine",
+        type=str,
+        default="zero_cost",
+        choices=["zero_cost", "native_video"],
+        help="Generation engine: 'zero_cost' (Flash + FFmpeg Ken Burns) or 'native_video' (Agnes Video 2.5 AI diffusion).",
+    )
+    parser.add_argument(
+        "--video-seconds",
+        type=str,
+        default="5",
+        help="Video duration in seconds for native video ('4'–'12').",
+    )
+    parser.add_argument(
+        "--video-size",
+        type=str,
+        default="720P",
+        choices=["720P", "1080P", "1K", "2K"],
+        help="Output resolution tier for native Agnes Video 2.5.",
+    )
+    parser.add_argument(
+        "--video-aspect-ratio",
+        type=str,
+        default="16:9",
+        choices=["16:9", "9:16", "1:1", "4:3", "21:9"],
+        help="Aspect ratio for native video generation.",
+    )
+    parser.add_argument(
+        "--video-mode",
+        type=str,
+        default="text",
+        choices=["text", "keyframe", "reference"],
+        help="Generation mode for native Agnes Video 2.5.",
+    )
+    parser.add_argument(
         "-o", "--output-dir",
         type=Path,
         default=Path("output"),
@@ -113,7 +147,12 @@ def main(argv: Optional[list[str]] = None) -> int:
     try:
         config = load_config(
             api_key=args.api_key,
+            engine=args.engine,
             image_size=args.size,
+            video_seconds=args.video_seconds,
+            video_size=args.video_size,
+            video_aspect_ratio=args.video_aspect_ratio,
+            video_mode=args.video_mode,
             fps=args.fps,
             seconds_per_scene=args.duration,
             output_dir=args.output_dir,
@@ -122,16 +161,27 @@ def main(argv: Optional[list[str]] = None) -> int:
         pipeline = ZeroCostVideoPipeline(config=config)
 
         print("\n" + "=" * 60)
-        print("🎬 AGNES ZERO-COST VIDEO GENERATOR ($0 Unlimited)")
-        print("=" * 60)
-        print(f"Prompt:      {args.prompt}")
-        print(f"Scenes:      {args.scenes} scenes (~{args.scenes * args.duration:.1f}s total)")
-        print(f"Resolution:  {args.size} @ {args.fps} FPS")
+        if args.engine == "native_video":
+            print("🎬 AGNES VIDEO 2.5 (Native AI Diffusion Video)")
+            print("=" * 60)
+            print(f"Prompt:       {args.prompt}")
+            print(f"Engine:       Agnes Video 2.5 (native_video)")
+            print(f"Video Spec:   {args.video_seconds}s @ {args.video_size} ({args.video_aspect_ratio})")
+            print(f"Mode:         {args.video_mode} mode")
+            if args.scenes > 1:
+                print(f"Multi-Scene:  {args.scenes} scenes stitched via FFmpeg")
+        else:
+            print("🎬 AGNES ZERO-COST VIDEO GENERATOR ($0 Unlimited)")
+            print("=" * 60)
+            print(f"Prompt:       {args.prompt}")
+            print(f"Engine:       Zero-Cost Flash + Ken Burns FFmpeg ($0)")
+            print(f"Scenes:       {args.scenes} scenes (~{args.scenes * args.duration:.1f}s total)")
+            print(f"Resolution:   {args.size} @ {args.fps} FPS")
+            print(f"Motion:       {'Enabled (Ken Burns)' if not args.no_motion else 'Disabled (Static)'}")
+            print(f"Continuity:   {'Enabled (Img2Img anchor)' if not args.no_continuity else 'Disabled'}")
         if args.style:
-            print(f"Style:       {args.style}")
-        print(f"Motion:      {'Enabled (Ken Burns)' if not args.no_motion else 'Disabled (Static)'}")
-        print(f"Continuity:  {'Enabled (Img2Img anchor)' if not args.no_continuity else 'Disabled'}")
-        print(f"Output Dir:  {args.output_dir.resolve()}")
+            print(f"Style:        {args.style}")
+        print(f"Output Dir:   {args.output_dir.resolve()}")
         print("=" * 60 + "\n")
 
         result = pipeline.run(
@@ -142,15 +192,20 @@ def main(argv: Optional[list[str]] = None) -> int:
             enable_motion=not args.no_motion,
             use_continuity=not args.no_continuity,
             dry_run=args.dry_run,
+            engine=args.engine,
+            video_seconds=args.video_seconds,
+            video_size=args.video_size,
+            video_aspect_ratio=args.video_aspect_ratio,
+            video_mode=args.video_mode,
             on_status=lambda msg: print(f"  ➜ {msg}"),
         )
 
         print("\n" + "-" * 60)
-        print("✅ Storyboard Summary:")
+        print("✅ Generation Summary:")
         print(f"   Title:   {result.storyboard.title}")
         print(f"   Summary: {result.storyboard.summary}")
         for s in result.storyboard.scenes:
-            print(f"   Scene {s.index} ({s.duration}s, motion={s.camera_motion}): {s.description}")
+            print(f"   Scene {s.index} ({s.duration}s): {s.description}")
 
         if result.video_path:
             print(f"\n🎉 Video Ready: {result.video_path.resolve()}")
