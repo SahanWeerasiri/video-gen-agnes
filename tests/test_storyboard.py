@@ -43,6 +43,24 @@ class TestStoryboardGenerator(unittest.TestCase):
         self.assertEqual(storyboard.scenes[0].camera_motion, "pan_left")
         self.assertEqual(storyboard.scenes[1].duration, 3.5)
 
+    def test_generate_with_explicit_duration_per_scene(self) -> None:
+        mock_json = """{
+            "title": "Neon Chase",
+            "summary": "Summary",
+            "scenes": [
+                {"index": 1, "description": "S1", "visual_prompt": "P1", "duration": 4.0},
+                {"index": 2, "description": "S2", "visual_prompt": "P2", "duration": 4.0},
+                {"index": 3, "description": "S3", "visual_prompt": "P3", "duration": 4.0}
+            ]
+        }"""
+        self.mock_client.create_chat_completion.return_value = mock_json
+
+        # User asked for 3 scenes each with 3.0 seconds
+        storyboard = self.generator.generate(prompt="Futuristic car chase", num_scenes=3, duration_per_scene=3.0)
+        self.assertEqual(len(storyboard.scenes), 3)
+        for s in storyboard.scenes:
+            self.assertEqual(s.duration, 3.0)
+
     def test_generate_json_in_markdown_fence(self) -> None:
         mock_response = """```json
 {

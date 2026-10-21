@@ -73,7 +73,7 @@ class StoryboardGenerator:
         prompt: str,
         num_scenes: int = 4,
         style: Optional[str] = None,
-        duration_per_scene: float = 4.0,
+        duration_per_scene: Optional[float] = None,
     ) -> Storyboard:
         """Create a multi-scene storyboard from a text prompt."""
         if not prompt.strip():
@@ -82,8 +82,13 @@ class StoryboardGenerator:
             raise ValueError("num_scenes must be at least 1.")
 
         style_instruction = f" Art style: {style}." if style else ""
+        duration_instruction = (
+            f"\nTarget duration per scene: {duration_per_scene:.1f} seconds. Each scene must have \"duration\": {duration_per_scene:.1f}."
+            if duration_per_scene is not None
+            else ""
+        )
         user_message = (
-            f"Generate a storyboard with exactly {num_scenes} scenes for the following concept:{style_instruction}\n\n"
+            f"Generate a storyboard with exactly {num_scenes} scenes for the following concept:{style_instruction}{duration_instruction}\n\n"
             f'"{prompt.strip()}"'
         )
 
@@ -98,12 +103,12 @@ class StoryboardGenerator:
             max_tokens=2048,
         )
 
-        return self._parse_response(raw_content, default_duration=duration_per_scene, expected_count=num_scenes)
+        return self._parse_response(raw_content, target_duration=duration_per_scene, expected_count=num_scenes)
 
     def _parse_response(
         self,
         raw_text: str,
-        default_duration: float,
+        target_duration: Optional[float],
         expected_count: int,
     ) -> Storyboard:
         """Parse and validate JSON response from the text model."""
@@ -146,9 +151,14 @@ class StoryboardGenerator:
             if camera_motion not in {"zoom_in", "zoom_out", "pan_left", "pan_right", "static"}:
                 camera_motion = "zoom_in"
 
-            duration = float(s.get("duration", default_duration))
+            # Enforce user-configured duration per scene if specified, otherwise respect model duration
+            if target_duration is not None and target_duration > 0:
+                duration = target_duration
+            else:
+                duration = float(s.get("duration", 4.0))
+
             if duration <= 0:
-                duration = default_duration
+                duration = 4.0
 
             scenes.append(
                 Scene(

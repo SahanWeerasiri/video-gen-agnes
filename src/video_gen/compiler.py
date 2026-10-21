@@ -68,6 +68,7 @@ class FFmpegCompiler:
         total_frames: int,
         width: int,
         height: int,
+        fps: int = 24,
     ) -> str:
         """Generate the FFmpeg zoompan filter string for cinematic camera movements."""
         motion = motion.lower()
@@ -76,29 +77,29 @@ class FFmpegCompiler:
             # Zooms in from 1.0 to 1.25 towards the center
             return (
                 f"zoompan=z='min(zoom+0.0015,1.25)':d={total_frames}:"
-                f"x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={width}x{height}"
+                f"x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={width}x{height}:fps={fps}"
             )
         elif motion == "zoom_out":
             # Zooms out from 1.25 to 1.0 from the center
             return (
                 f"zoompan=z='max(1.25-0.0015*on,1.0)':d={total_frames}:"
-                f"x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={width}x{height}"
+                f"x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={width}x{height}:fps={fps}"
             )
         elif motion == "pan_left":
             # Pans horizontally from right to left
             return (
                 f"zoompan=z='1.15':d={total_frames}:"
-                f"x='(1-on/{total_frames})*(iw-iw/zoom)':y='(ih-ih/zoom)/2':s={width}x{height}"
+                f"x='(1-on/{total_frames})*(iw-iw/zoom)':y='(ih-ih/zoom)/2':s={width}x{height}:fps={fps}"
             )
         elif motion == "pan_right":
             # Pans horizontally from left to right
             return (
                 f"zoompan=z='1.15':d={total_frames}:"
-                f"x='(on/{total_frames})*(iw-iw/zoom)':y='(ih-ih/zoom)/2':s={width}x{height}"
+                f"x='(on/{total_frames})*(iw-iw/zoom)':y='(ih-ih/zoom)/2':s={width}x{height}:fps={fps}"
             )
         else:
             # Static: gentle scale to destination resolution
-            return f"zoompan=z='1.0':d={total_frames}:s={width}x{height}"
+            return f"zoompan=z='1.0':d={total_frames}:s={width}x{height}:fps={fps}"
 
     def _compile_with_ken_burns(
         self,
@@ -115,24 +116,25 @@ class FFmpegCompiler:
 
             for i, frame in enumerate(frames):
                 clip_path = temp_path / f"clip_{i:03d}.mp4"
-                total_frames = max(1, int(frame.duration * fps))
+                total_frames = max(1, int(round(frame.duration * fps)))
                 zoompan_filter = self._build_zoompan_filter(
                     motion=frame.camera_motion,
                     total_frames=total_frames,
                     width=width,
                     height=height,
+                    fps=fps,
                 )
 
-                # Filter graph: zoompan -> setpts -> fps -> format
-                vf = f"{zoompan_filter},setpts=PTS-STARTPTS,fps={fps},format=yuv420p"
+                # Filter graph: zoompan -> setpts -> format
+                vf = f"{zoompan_filter},setpts=PTS-STARTPTS,format=yuv420p"
 
                 cmd = [
                     self.ffmpeg_path,
                     "-y",
-                    "-loop", "1",
-                    "-t", str(frame.duration),
                     "-i", str(frame.image_path.resolve()),
                     "-vf", vf,
+                    "-frames:v", str(total_frames),
+                    "-t", f"{frame.duration:.3f}",
                     "-c:v", "libx264",
                     "-preset", "ultrafast",
                     "-pix_fmt", "yuv420p",
@@ -172,6 +174,7 @@ class FFmpegCompiler:
         height: int,
     ) -> Path:
         """Fast slideshow compilation using concat demuxer."""
+        total_duration = sum(f.duration for f in frames)
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
             concat_list = temp_path / "slideshow_list.txt"
@@ -189,6 +192,7 @@ class FFmpegCompiler:
                 "-f", "concat",
                 "-safe", "0",
                 "-i", str(concat_list),
+                "-t", f"{total_duration:.3f}",
                 "-vf", f"scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,fps={fps},format=yuv420p",
                 "-c:v", "libx264",
                 "-pix_fmt", "yuv420p",

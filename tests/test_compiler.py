@@ -49,7 +49,7 @@ class TestFFmpegCompiler(unittest.TestCase):
         self.assertIn("on/72", f_pan_right)
 
         f_static = self.compiler._build_zoompan_filter("static", 72, 1280, 720)
-        self.assertEqual(f_static, "zoompan=z='1.0':d=72:s=1280x720")
+        self.assertEqual(f_static, "zoompan=z='1.0':d=72:s=1280x720:fps=24")
 
     @patch("subprocess.run")
     def test_compile_video_with_motion(self, mock_run: MagicMock) -> None:
@@ -93,6 +93,36 @@ class TestFFmpegCompiler(unittest.TestCase):
         with self.assertRaises(FFmpegError) as ctx:
             self.compiler.compile_video(frames, self.output_dir / "test.mp4", enable_motion=False)
         self.assertIn("Invalid codec option", str(ctx.exception))
+
+    def test_real_ffmpeg_compile_exact_duration(self) -> None:
+        """Integration test with local FFmpeg: verify 3 scenes x 3.0s compile to exactly 9.0s."""
+        img1 = self.output_dir / "test1.png"
+        img2 = self.output_dir / "test2.png"
+        img3 = self.output_dir / "test3.png"
+
+        # Generate 3 small 64x64 solid PNGs with ffmpeg
+        for p, color in [(img1, "red"), (img2, "green"), (img3, "blue")]:
+            subprocess.run([
+                "ffmpeg", "-y", "-f", "lavfi", "-i", f"color=c={color}:s=64x64:d=1",
+                "-vframes", "1", str(p)
+            ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+        frames = [
+            GeneratedFrame(scene_index=1, image_path=img1, prompt="p1", camera_motion="zoom_in", duration=3.0),
+            GeneratedFrame(scene_index=2, image_path=img2, prompt="p2", camera_motion="pan_left", duration=3.0),
+            GeneratedFrame(scene_index=3, image_path=img3, prompt="p3", camera_motion="zoom_out", duration=3.0),
+        ]
+
+        out_mp4 = self.output_dir / "out_9s.mp4"
+        self.compiler.compile_video(frames=frames, output_file=out_mp4, fps=24, resolution="64x64", enable_motion=True)
+
+        probe = subprocess.run([
+            "ffprobe", "-v", "error", "-show_entries", "format=duration",
+            "-of", "default=noprint_wrappers=1:nokey=1", str(out_mp4)
+        ], capture_output=True, text=True, check=True)
+
+        duration = float(probe.stdout.strip())
+        self.assertAlmostEqual(duration, 9.0, delta=0.1)
 
 
 if __name__ == "__main__":
