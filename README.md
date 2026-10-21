@@ -84,6 +84,7 @@ python app.py
 Open **[http://localhost:5000](http://localhost:5000)** in your browser.
 
 ### Web Studio Features
+* **Server Health & Heartbeat**: Real-time server connectivity indicator (`/health` and `/api/health`) tracking backend uptime and FFmpeg status.
 * **Interactive Prompt Playground**: Auto-expanding prompt input with 1-click inspirational starter chips (Cyberpunk, Studio Ghibli, Nature Documentary, Sci-Fi).
 * **Visual Style Presets**: Quick pills for Cinematic 8K, Cyberpunk, Studio Ghibli, Photorealistic, Anime, and 35mm Vintage Film.
 * **Aspect Ratio Cards**: Instant switching between 4:3 Landscape (`1024x768`), 1:1 Square (`1024x1024`), and 3:4 Portrait (`768x1024`).

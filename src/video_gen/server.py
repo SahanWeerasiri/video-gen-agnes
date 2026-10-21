@@ -7,10 +7,13 @@ import threading
 import uuid
 from dataclasses import asdict
 from pathlib import Path
-from typing import Any, Optional
+import shutil
+import time
+from datetime import datetime, timezone
 
 from flask import Flask, jsonify, render_template, request, send_from_directory
 
+import video_gen
 from video_gen.config import PipelineConfig, load_config
 from video_gen.pipeline import ZeroCostVideoPipeline
 
@@ -19,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 def create_app(config: Optional[PipelineConfig] = None) -> Flask:
     """Create and configure the Flask web application."""
+    start_time = time.time()
     base_dir = Path(__file__).parent
     template_folder = base_dir / "templates"
     static_folder = base_dir / "static"
@@ -36,6 +40,24 @@ def create_app(config: Optional[PipelineConfig] = None) -> Flask:
     @app.route("/")
     def index():
         return render_template("index.html")
+
+    @app.route("/health", methods=["GET"])
+    @app.route("/api/health", methods=["GET"])
+    def health_check():
+        cfg: PipelineConfig = app.config["PIPELINE_CONFIG"]
+        has_key = bool(cfg.api_key and cfg.api_key != "your_agnes_api_key_here")
+        ffmpeg_available = bool(shutil.which("ffmpeg"))
+        uptime = round(time.time() - start_time, 2)
+
+        return jsonify({
+            "status": "healthy",
+            "server": "Agnes Studio",
+            "version": getattr(video_gen, "__version__", "0.1.0"),
+            "uptime_seconds": uptime,
+            "ffmpeg_installed": ffmpeg_available,
+            "has_api_key": has_key,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
 
     @app.route("/api/config", methods=["GET"])
     def get_config():

@@ -24,6 +24,19 @@ class TestServer(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Agnes Studio", response.data)
 
+    def test_health_check_endpoints(self) -> None:
+        for route in ["/health", "/api/health"]:
+            response = self.client.get(route)
+            self.assertEqual(response.status_code, 200)
+            data = response.get_json()
+            self.assertEqual(data["status"], "healthy")
+            self.assertEqual(data["server"], "Agnes Studio")
+            self.assertIn("version", data)
+            self.assertIn("uptime_seconds", data)
+            self.assertIn("ffmpeg_installed", data)
+            self.assertIn("has_api_key", data)
+            self.assertIn("timestamp", data)
+
     def test_get_config(self) -> None:
         response = self.client.get("/api/config")
         self.assertEqual(response.status_code, 200)

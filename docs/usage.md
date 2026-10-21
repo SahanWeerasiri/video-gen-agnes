@@ -42,10 +42,32 @@ Launch the Web Studio interface:
 python app.py
 ```
 Open **http://localhost:5000** in your browser to:
+- Monitor live server status and uptime via the built-in health badge.
 - Test creative ideas with 1-click prompt chips.
 - Adjust scenes, durations, resolution, and styles interactively.
 - Track real-time progress and logs.
 - Watch and download generated videos directly in your browser.
+
+### 2.1 Health Check API
+You can check server health programmatically or from monitoring agents:
+```bash
+curl http://localhost:5000/health
+# or
+curl http://localhost:5000/api/health
+```
+
+Example Response:
+```json
+{
+  "status": "healthy",
+  "server": "Agnes Studio",
+  "version": "0.1.0",
+  "uptime_seconds": 45.2,
+  "ffmpeg_installed": true,
+  "has_api_key": true,
+  "timestamp": "2026-10-21T03:15:20.123456+00:00"
+}
+```
 
 ---
 

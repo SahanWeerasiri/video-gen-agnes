@@ -26,16 +26,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const videoElement = document.getElementById('videoElement');
   const btnDownload = document.getElementById('btnDownload');
   const storyboardGallery = document.getElementById('storyboardGallery');
-  const scenesGrid = document.getElementById('scenesGrid');
   const apiKeyStatus = document.getElementById('apiKeyStatus');
+  const serverHealthBadge = document.getElementById('serverHealthBadge');
+  const healthDot = document.getElementById('healthDot');
+  const serverHealthText = document.getElementById('serverHealthText');
 
   let selectedStyle = null;
   let selectedSize = '1024x768';
   let activeTaskId = null;
   let pollInterval = null;
 
-  // Initialize Config Status
+  // Initialize Config & Health Status
   fetchConfig();
+  checkServerHealth();
+  setInterval(checkServerHealth, 10000);
 
   // Slider Listeners
   scenesSlider.addEventListener('input', (e) => {
@@ -95,6 +99,24 @@ document.addEventListener('DOMContentLoaded', () => {
   // Buttons
   btnGenerate.addEventListener('click', () => startTask(false));
   btnDryRun.addEventListener('click', () => startTask(true));
+
+  async function checkServerHealth() {
+    try {
+      const res = await fetch('/api/health');
+      if (!res.ok) throw new Error('Health check failed');
+      const data = await res.json();
+
+      serverHealthBadge.classList.remove('offline');
+      healthDot.classList.remove('offline');
+      serverHealthText.textContent = `Server Online (v${data.version})`;
+      serverHealthBadge.title = `Server: ${data.server} v${data.version} | Uptime: ${data.uptime_seconds}s | FFmpeg: ${data.ffmpeg_installed ? 'Installed' : 'Missing'}`;
+    } catch (err) {
+      serverHealthBadge.classList.add('offline');
+      healthDot.classList.add('offline');
+      serverHealthText.textContent = 'Server Offline';
+      serverHealthBadge.title = 'Cannot connect to backend server. Is python app.py running?';
+    }
+  }
 
   async function fetchConfig() {
     try {

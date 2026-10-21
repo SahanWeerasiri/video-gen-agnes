@@ -131,6 +131,32 @@ body {
   gap: 12px;
 }
 
+.health-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 30px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #34d399;
+  cursor: default;
+  transition: all var(--transition-normal);
+}
+
+.health-badge.offline {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #f87171;
+}
+
+.health-dot.offline {
+  background: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+}
+
 .zero-cost-pill {
   display: inline-flex;
   align-items: center;
