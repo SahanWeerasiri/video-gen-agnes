@@ -4,8 +4,13 @@ Architecture Decision Records (ADRs) capture important architectural choices mad
 
 ## Index of Decisions
 
-* [ADR-0001: Zero-Cost Video Generation Pipeline using Agnes Flash Models and FFmpeg](0001-zero-cost-video-generation-pipeline.md)
-* [ADR-0002: Dual-Engine Architecture Supporting Native Agnes Video 2.5 and Zero-Cost FFmpeg Pipeline](0002-native-agnes-video-engine.md)
+| ADR | Title | Status | Date |
+|:---:|:------|:------:|:----:|
+| [0001](0001-zero-cost-video-generation-pipeline.md) | Zero-Cost Video Generation Pipeline using Agnes Flash Models and FFmpeg | accepted | 2026-10-21 |
+| [0002](0002-native-agnes-video-engine.md) | Dual-Engine Architecture Supporting Native Agnes Video 2.5 and Zero-Cost FFmpeg Pipeline | accepted | 2026-10-21 |
+| [0003](0003-deterministic-video-timing-and-ffmpeg-assembly.md) | Deterministic Video Timing and FFmpeg ZoomPan Single-Frame Assembly | accepted | 2026-10-21 |
+| [0004](0004-interactive-web-studio-and-asynchronous-task-architecture.md) | Interactive Web Studio and Asynchronous Task Architecture | accepted | 2026-10-21 |
+| [0005](0005-api-quota-enforcement-and-graceful-error-handling.md) | API Quota Enforcement and Graceful Error Handling for Agnes AI Services | accepted | 2026-10-21 |
 
 ---
 

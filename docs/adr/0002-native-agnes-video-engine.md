@@ -52,4 +52,8 @@ We will implement a unified **Dual-Engine Architecture** that supports both gene
 
 ### Negative / Trade-offs
 - Native video generation requires asynchronous polling (typically 30–90 seconds per clip) compared to quick image-only generation.
-- Real API costs apply when using `agnes-video-2.5` outside promotional grants.
+- **Strict Paid Billing Requirement (Validated in Production)**: Live API testing confirmed that `POST /v1/videos` strictly enforces billing quota, returning `HTTP 403: {"code":"insufficient_user_quota","message":"Insufficient user quota, remaining: ＄0.000000"}` on accounts with zero balance. Unlike `agnes-2.5-flash` and `agnes-image-2.0-flash`, `agnes-video-2.5` has no free promotional tier.
+
+### Risks & Mitigations
+- **Quota Exhaustion (HTTP 403)**: Mitigated by providing clear actionable error messaging directing users without funded accounts to the 100% free Zero-Cost engine (`zero_cost`).
+- **Network / Polling Timeouts**: Mitigated by exponential backoff on `GET /agnesapi`, configurable timeouts (`video_timeout_sec=600`), and live UI progress display.
