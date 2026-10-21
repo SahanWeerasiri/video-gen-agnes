@@ -5,6 +5,7 @@ Architecture Decision Records (ADRs) capture important architectural choices mad
 ## Index of Decisions
 
 * [ADR-0001: Zero-Cost Video Generation Pipeline using Agnes Flash Models and FFmpeg](0001-zero-cost-video-generation-pipeline.md)
+* [ADR-0002: Dual-Engine Architecture Supporting Native Agnes Video 2.5 and Zero-Cost FFmpeg Pipeline](0002-native-agnes-video-engine.md)
 
 ---
 
