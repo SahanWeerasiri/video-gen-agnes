@@ -217,9 +217,21 @@ class TestAgnesClient(unittest.TestCase):
         }
         self.mock_session.get.return_value = resp_failed
 
+    def test_create_video_task_quota_error_provides_zero_cost_hint(self) -> None:
+        quota_err = MagicMock()
+        quota_err.status_code = 403
+        quota_err.json.return_value = {
+            "code": "insufficient_user_quota",
+            "message": "Insufficient user quota, remaining: $0.000000",
+            "data": None,
+        }
+        self.mock_session.post.return_value = quota_err
+
         with self.assertRaises(AgnesAPIError) as ctx:
-            self.client.wait_for_video(video_id="video_err", poll_interval=0.01)
-        self.assertIn("GPU generation out of memory", str(ctx.exception))
+            self.client.create_video_task(prompt="test prompt")
+
+        self.assertIn("Insufficient account quota for Agnes Video 2.5", str(ctx.exception))
+        self.assertIn("Zero-Cost Pipeline", str(ctx.exception))
 
 
 if __name__ == "__main__":

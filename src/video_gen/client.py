@@ -102,7 +102,21 @@ class AgnesClient:
                 except Exception:
                     pass
 
-                message = error_body.get("error", {}).get("message") or response.text
+                raw_msg = (
+                    error_body.get("error", {}).get("message")
+                    if isinstance(error_body.get("error"), dict)
+                    else (error_body.get("message") or response.text)
+                )
+
+                if "insufficient_user_quota" in str(error_body) or (response.status_code == 403 and "quota" in str(error_body).lower()):
+                    message = (
+                        f"Insufficient account quota for Agnes Video 2.5. "
+                        f"Native video diffusion requires paid API credits ($0.025-$0.055/sec). "
+                        f"To generate unlimited videos at strictly $0 cost, switch to the 'Zero-Cost Pipeline' engine! ({raw_msg})"
+                    )
+                else:
+                    message = raw_msg
+
                 raise AgnesAPIError(
                     status_code=response.status_code,
                     message=message,
@@ -183,7 +197,21 @@ class AgnesClient:
                 except Exception:
                     pass
 
-                message = error_body.get("error", {}).get("message") or response.text
+                raw_msg = (
+                    error_body.get("error", {}).get("message")
+                    if isinstance(error_body.get("error"), dict)
+                    else (error_body.get("message") or response.text)
+                )
+
+                if "insufficient_user_quota" in str(error_body) or (response.status_code == 403 and "quota" in str(error_body).lower()):
+                    message = (
+                        f"Insufficient account quota for Agnes Video 2.5. "
+                        f"Native video diffusion requires paid API credits ($0.025-$0.055/sec). "
+                        f"To generate unlimited videos at strictly $0 cost, switch to the 'Zero-Cost Pipeline' engine! ({raw_msg})"
+                    )
+                else:
+                    message = raw_msg
+
                 raise AgnesAPIError(
                     status_code=response.status_code,
                     message=message,
