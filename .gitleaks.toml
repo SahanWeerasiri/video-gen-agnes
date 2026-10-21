@@ -1,0 +1,11 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Ignore documentation placeholder keys"
+regexes = [
+    '''YOUR_API_KEY''',
+]
+paths = [
+    '''docs/agnes/.*''',
+]
