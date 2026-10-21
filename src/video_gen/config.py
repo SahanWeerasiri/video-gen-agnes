@@ -16,7 +16,13 @@ class PipelineConfig:
     base_url: str = "https://apihub.agnes-ai.com/v1"
     text_model: str = "agnes-2.5-flash"
     image_model: str = "agnes-image-2.0-flash"
+    video_model: str = "agnes-video-2.5"
+    engine: str = "zero_cost"  # "zero_cost" (hybrid Flash+FFmpeg) or "native_video" (Agnes Video 2.5)
     image_size: str = "1024x768"
+    video_seconds: str = "5"
+    video_size: str = "720P"
+    video_aspect_ratio: str = "16:9"
+    video_mode: str = "text"
     fps: int = 24
     seconds_per_scene: float = 4.0
     transition_duration: float = 1.0
@@ -24,6 +30,8 @@ class PipelineConfig:
     max_retries: int = 5
     base_backoff_sec: float = 2.0
     timeout_sec: float = 120.0
+    video_poll_interval: float = 2.0
+    video_timeout_sec: float = 600.0
 
     def __post_init__(self) -> None:
         if not self.api_key:
@@ -34,6 +42,8 @@ class PipelineConfig:
             raise ValueError(f"seconds_per_scene must be positive, got {self.seconds_per_scene}")
         if self.max_retries < 0:
             raise ValueError(f"max_retries must be non-negative, got {self.max_retries}")
+        if self.engine not in {"zero_cost", "native_video"}:
+            raise ValueError(f"Invalid engine: {self.engine}. Must be 'zero_cost' or 'native_video'.")
 
 
 def parse_env_file(env_path: Path) -> dict[str, str]:
@@ -61,7 +71,13 @@ def load_config(
     base_url: Optional[str] = None,
     text_model: Optional[str] = None,
     image_model: Optional[str] = None,
+    video_model: Optional[str] = None,
+    engine: Optional[str] = None,
     image_size: Optional[str] = None,
+    video_seconds: Optional[str] = None,
+    video_size: Optional[str] = None,
+    video_aspect_ratio: Optional[str] = None,
+    video_mode: Optional[str] = None,
     fps: Optional[int] = None,
     seconds_per_scene: Optional[float] = None,
     output_dir: Optional[Path] = None,
@@ -98,10 +114,46 @@ def load_config(
         or file_vars.get("AGNES_IMAGE_MODEL", "agnes-image-2.0-flash")
     )
 
+    resolved_video_model = (
+        video_model
+        or os.environ.get("AGNES_VIDEO_MODEL")
+        or file_vars.get("AGNES_VIDEO_MODEL", "agnes-video-2.5")
+    )
+
+    resolved_engine = (
+        engine
+        or os.environ.get("AGNES_ENGINE")
+        or file_vars.get("AGNES_ENGINE", "zero_cost")
+    )
+
     resolved_image_size = (
         image_size
         or os.environ.get("DEFAULT_IMAGE_SIZE")
         or file_vars.get("DEFAULT_IMAGE_SIZE", "1024x768")
+    )
+
+    resolved_video_seconds = str(
+        video_seconds
+        or os.environ.get("DEFAULT_VIDEO_SECONDS")
+        or file_vars.get("DEFAULT_VIDEO_SECONDS", "5")
+    )
+
+    resolved_video_size = (
+        video_size
+        or os.environ.get("DEFAULT_VIDEO_SIZE")
+        or file_vars.get("DEFAULT_VIDEO_SIZE", "720P")
+    )
+
+    resolved_video_aspect = (
+        video_aspect_ratio
+        or os.environ.get("DEFAULT_VIDEO_ASPECT_RATIO")
+        or file_vars.get("DEFAULT_VIDEO_ASPECT_RATIO", "16:9")
+    )
+
+    resolved_video_mode = (
+        video_mode
+        or os.environ.get("DEFAULT_VIDEO_MODE")
+        or file_vars.get("DEFAULT_VIDEO_MODE", "text")
     )
 
     raw_fps = fps or os.environ.get("DEFAULT_FPS") or file_vars.get("DEFAULT_FPS", 24)
@@ -126,7 +178,13 @@ def load_config(
         base_url=resolved_base_url,
         text_model=resolved_text_model,
         image_model=resolved_image_model,
+        video_model=resolved_video_model,
+        engine=resolved_engine,
         image_size=resolved_image_size,
+        video_seconds=resolved_video_seconds,
+        video_size=resolved_video_size,
+        video_aspect_ratio=resolved_video_aspect,
+        video_mode=resolved_video_mode,
         fps=resolved_fps,
         seconds_per_scene=resolved_duration,
         output_dir=resolved_output_dir,

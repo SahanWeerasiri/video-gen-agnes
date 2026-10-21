@@ -122,6 +122,105 @@ class TestAgnesClient(unittest.TestCase):
             self.client.generate_image(prompt="test")
         self.assertIn("Invalid parameter", str(ctx.exception))
 
+    def test_create_video_task_text_mode(self) -> None:
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "id": "task_12345",
+            "video_id": "video_12345",
+            "task_id": "task_12345",
+            "status": "queued",
+        }
+        self.mock_session.post.return_value = mock_response
+
+        res = self.client.create_video_task(
+            prompt="Futuristic city with flying vehicles",
+            seconds="6",
+            size="1080P",
+            aspect_ratio="16:9",
+        )
+
+        self.assertEqual(res["video_id"], "video_12345")
+        self.assertEqual(res["status"], "queued")
+        call_kwargs = self.mock_session.post.call_args.kwargs
+        self.assertEqual(call_kwargs["json"]["model"], "agnes-video-2.5")
+        self.assertEqual(call_kwargs["json"]["mode"], "text")
+        self.assertEqual(call_kwargs["json"]["seconds"], "6")
+        self.assertEqual(call_kwargs["json"]["size"], "1080P")
+
+    def test_create_video_task_keyframe_mode(self) -> None:
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "id": "task_kf",
+            "video_id": "video_kf",
+            "status": "queued",
+        }
+        self.mock_session.post.return_value = mock_response
+
+        res = self.client.create_video_task(
+            prompt="Transition from day to night",
+            mode="keyframe",
+            first_frame="https://example.com/day.png",
+            last_frame="https://example.com/night.png",
+        )
+        self.assertEqual(res["video_id"], "video_kf")
+        call_kwargs = self.mock_session.post.call_args.kwargs
+        self.assertEqual(call_kwargs["json"]["first_frame"], "https://example.com/day.png")
+        self.assertEqual(call_kwargs["json"]["last_frame"], "https://example.com/night.png")
+
+    def test_get_video_task(self) -> None:
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "id": "task_999",
+            "status": "in_progress",
+            "progress": 55,
+            "url": None,
+        }
+        self.mock_session.get.return_value = mock_response
+
+        status_info = self.client.get_video_task(video_id="video_999")
+        self.assertEqual(status_info["status"], "in_progress")
+        self.assertEqual(status_info["progress"], 55)
+
+        call_kwargs = self.mock_session.get.call_args.kwargs
+        self.assertIn("agnesapi", call_kwargs["url"])
+        self.assertEqual(call_kwargs["params"]["video_id"], "video_999")
+        self.assertEqual(call_kwargs["params"]["model_name"], "agnes-video-2.5")
+
+    def test_wait_for_video_success(self) -> None:
+        resp_pending = MagicMock()
+        resp_pending.status_code = 200
+        resp_pending.json.return_value = {"status": "in_progress", "progress": 50, "url": None}
+
+        resp_done = MagicMock()
+        resp_done.status_code = 200
+        resp_done.json.return_value = {
+            "status": "completed",
+            "progress": 100,
+            "url": "https://storage.googleapis.com/agnes/clip.mp4",
+        }
+        self.mock_session.get.side_effect = [resp_pending, resp_done]
+
+        res = self.client.wait_for_video(video_id="video_abc", poll_interval=0.01, timeout_seconds=5)
+        self.assertEqual(res["status"], "completed")
+        self.assertEqual(res["url"], "https://storage.googleapis.com/agnes/clip.mp4")
+
+    def test_wait_for_video_failed(self) -> None:
+        resp_failed = MagicMock()
+        resp_failed.status_code = 200
+        resp_failed.json.return_value = {
+            "status": "failed",
+            "progress": 0,
+            "error": {"message": "GPU generation out of memory"},
+        }
+        self.mock_session.get.return_value = resp_failed
+
+        with self.assertRaises(AgnesAPIError) as ctx:
+            self.client.wait_for_video(video_id="video_err", poll_interval=0.01)
+        self.assertIn("GPU generation out of memory", str(ctx.exception))
+
 
 if __name__ == "__main__":
     unittest.main()
