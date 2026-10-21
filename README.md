@@ -1,6 +1,6 @@
 # Zero-Cost & Native AI Video Generator
 
-A modular, production-ready AI video generator built to support **two flexible creation engines**:
+A modular, production-ready AI video generator built to support **two flexible creation engines** powered by [Agnes AI](https://www.agnes-ai.com/en/docs/overview):
 1. **Zero-Cost Engine ($0 Unlimited)**: Employs the promotional free pricing of Agnes AI Flash models (`agnes-2.5-flash` + `agnes-image-2.0-flash`) combined with local FFmpeg Ken Burns animation and stitching.
 2. **Native Agnes Video 2.5 Engine**: Direct integration with the official `agnes-video-2.5` diffusion model (`POST /v1/videos` and asynchronous polling via `GET /agnesapi`) for realistic subject motion, physical dynamics, and multi-scene cinematic films.
 
@@ -184,6 +184,7 @@ PYTHONPATH=src python -m unittest discover -s tests -p "test_*.py"
 ---
 
 ## 📖 Architecture & Documentation
+* [Agnes AI Official Documentation](https://www.agnes-ai.com/en/docs/overview)
 * [ADR-0001: Zero-Cost Video Generation Pipeline](docs/adr/0001-zero-cost-video-generation-pipeline.md)
 * [ADR-0002: Dual-Engine Architecture Supporting Native Agnes Video 2.5](docs/adr/0002-native-agnes-video-engine.md)
 * [ADR-0003: Deterministic Video Timing and FFmpeg ZoomPan Single-Frame Assembly](docs/adr/0003-deterministic-video-timing-and-ffmpeg-assembly.md)
