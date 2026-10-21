@@ -268,9 +268,9 @@ def main() -> None:
     """Run the Flask development server."""
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
     app = create_app()
-    port = 5000
-    print(f"\n🚀 Agnes AI Video Generator Web UI starting at: http://127.0.0.1:{port}\n")
-    app.run(host="0.0.0.0", port=port, debug=False)
+    host = os.environ.get("HOST", "127.0.0.1")
+    print(f"\n🚀 Agnes AI Video Generator Web UI starting at: http://{host}:{port}\n")
+    app.run(host=host, port=port, debug=False)
 
 
 if __name__ == "__main__":
