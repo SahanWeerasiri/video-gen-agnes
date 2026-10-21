@@ -75,9 +75,15 @@ def create_app(config: Optional[PipelineConfig] = None) -> Flask:
             "base_url": cfg.base_url,
             "text_model": cfg.text_model,
             "image_model": cfg.image_model,
+            "video_model": cfg.video_model,
+            "default_engine": cfg.engine,
             "default_size": cfg.image_size,
             "default_fps": cfg.fps,
             "default_duration": cfg.seconds_per_scene,
+            "default_video_seconds": cfg.video_seconds,
+            "default_video_size": cfg.video_size,
+            "default_video_aspect": cfg.video_aspect_ratio,
+            "default_video_mode": cfg.video_mode,
         })
 
     @app.route("/api/generate", methods=["POST"])
@@ -89,6 +95,7 @@ def create_app(config: Optional[PipelineConfig] = None) -> Flask:
         if not prompt:
             return jsonify({"error": "Prompt is required"}), 400
 
+        engine = str(data.get("engine", cfg.engine))
         scenes = int(data.get("scenes", 4))
         duration = float(data.get("duration", cfg.seconds_per_scene))
         size = str(data.get("size", cfg.image_size))
@@ -97,6 +104,11 @@ def create_app(config: Optional[PipelineConfig] = None) -> Flask:
         enable_motion = bool(data.get("enable_motion", True))
         use_continuity = bool(data.get("use_continuity", True))
         dry_run = bool(data.get("dry_run", False))
+
+        video_seconds = str(data.get("video_seconds", cfg.video_seconds))
+        video_size = str(data.get("video_size", cfg.video_size))
+        video_aspect_ratio = str(data.get("video_aspect_ratio", cfg.video_aspect_ratio))
+        video_mode = str(data.get("video_mode", cfg.video_mode))
 
         task_id = str(uuid.uuid4())
         task_output_dir = cfg.output_dir / task_id
@@ -112,6 +124,7 @@ def create_app(config: Optional[PipelineConfig] = None) -> Flask:
             "video_url": None,
             "error": None,
             "prompt": prompt,
+            "engine": engine,
             "dry_run": dry_run,
         }
 
@@ -122,26 +135,43 @@ def create_app(config: Optional[PipelineConfig] = None) -> Flask:
             with tasks_lock:
                 tasks[task_id]["status"] = "running"
                 tasks[task_id]["progress"] = 5
-                tasks[task_id]["stage"] = "Planning storyboard with agnes-2.5-flash ($0)..."
-                tasks[task_id]["logs"].append("Started video generation task")
+                tasks[task_id]["stage"] = (
+                    "Initializing Agnes Video 2.5 AI diffusion..."
+                    if engine == "native_video"
+                    else "Planning storyboard with agnes-2.5-flash ($0)..."
+                )
+                tasks[task_id]["logs"].append(f"Started video generation task (engine: {engine})")
 
             def on_status(msg: str):
+                import re
                 with tasks_lock:
                     tasks[task_id]["logs"].append(msg)
-                    if "Planning scene storyboard" in msg:
-                        tasks[task_id]["progress"] = 20
+                    prog_match = re.search(r"progress:\s*(\d+)%", msg)
+                    if prog_match:
+                        pct = int(prog_match.group(1))
+                        # Scale progress between 15% and 90%
+                        scaled_pct = 15 + int(pct * 0.75)
+                        tasks[task_id]["progress"] = scaled_pct
+                        tasks[task_id]["stage"] = msg
+                    elif "Planning scene storyboard" in msg:
+                        tasks[task_id]["progress"] = 15
                         tasks[task_id]["stage"] = "Designing storyboard & scenes..."
                     elif "Generating" in msg and "frames" in msg:
-                        tasks[task_id]["progress"] = 40
+                        tasks[task_id]["progress"] = 35
                         tasks[task_id]["stage"] = "Synthesizing keyframe images..."
                     elif "Generated frame" in msg:
-                        # Increment progress per frame
                         current_prog = tasks[task_id]["progress"]
                         tasks[task_id]["progress"] = min(80, current_prog + 10)
                         tasks[task_id]["stage"] = msg
-                    elif "Compiling frames" in msg:
+                    elif "Submitting native video task" in msg:
+                        tasks[task_id]["progress"] = 15
+                        tasks[task_id]["stage"] = "Submitting task to Agnes Video 2.5..."
+                    elif "Downloading generated video" in msg or "Downloading video" in msg:
+                        tasks[task_id]["progress"] = 92
+                        tasks[task_id]["stage"] = "Downloading generated video..."
+                    elif "Compiling frames" in msg or "Stitching multi-scene" in msg:
                         tasks[task_id]["progress"] = 85
-                        tasks[task_id]["stage"] = "Rendering cinematic motion with FFmpeg..."
+                        tasks[task_id]["stage"] = "Rendering / stitching MP4 with FFmpeg..."
                     elif "Video generated successfully" in msg:
                         tasks[task_id]["progress"] = 100
                         tasks[task_id]["stage"] = "Complete!"
@@ -152,7 +182,13 @@ def create_app(config: Optional[PipelineConfig] = None) -> Flask:
                     base_url=cfg.base_url,
                     text_model=cfg.text_model,
                     image_model=cfg.image_model,
+                    video_model=cfg.video_model,
+                    engine=engine,
                     image_size=size,
+                    video_seconds=video_seconds,
+                    video_size=video_size,
+                    video_aspect_ratio=video_aspect_ratio,
+                    video_mode=video_mode,
                     fps=fps,
                     seconds_per_scene=duration,
                     output_dir=task_output_dir,
@@ -167,6 +203,11 @@ def create_app(config: Optional[PipelineConfig] = None) -> Flask:
                     enable_motion=enable_motion,
                     use_continuity=use_continuity,
                     dry_run=dry_run,
+                    engine=engine,
+                    video_seconds=video_seconds,
+                    video_size=video_size,
+                    video_aspect_ratio=video_aspect_ratio,
+                    video_mode=video_mode,
                     on_status=on_status,
                 )
 

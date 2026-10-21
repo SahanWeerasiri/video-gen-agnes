@@ -31,8 +31,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const healthDot = document.getElementById('healthDot');
   const serverHealthText = document.getElementById('serverHealthText');
 
+  // Engine Elements
+  const tabZeroCost = document.getElementById('tabZeroCost');
+  const tabNativeVideo = document.getElementById('tabNativeVideo');
+  const zeroCostControls = document.getElementById('zeroCostControls');
+  const nativeVideoControls = document.getElementById('nativeVideoControls');
+  const videoDurationSlider = document.getElementById('videoDurationSlider');
+  const videoDurationVal = document.getElementById('videoDurationVal');
+  const nativeMultiSceneToggle = document.getElementById('nativeMultiSceneToggle');
+  const nativeSceneCountWrapper = document.getElementById('nativeSceneCountWrapper');
+  const nativeScenesSlider = document.getElementById('nativeScenesSlider');
+  const nativeScenesVal = document.getElementById('nativeScenesVal');
+
+  let currentEngine = 'zero_cost';
   let selectedStyle = null;
   let selectedSize = '1024x768';
+  let selectedVideoSize = '720P';
+  let selectedVideoAspect = '16:9';
   let activeTaskId = null;
   let pollInterval = null;
 
@@ -40,6 +55,62 @@ document.addEventListener('DOMContentLoaded', () => {
   fetchConfig();
   checkServerHealth();
   setInterval(checkServerHealth, 10000);
+
+  // Engine Switcher
+  tabZeroCost.addEventListener('click', () => setEngine('zero_cost'));
+  tabNativeVideo.addEventListener('click', () => setEngine('native_video'));
+
+  function setEngine(engine) {
+    currentEngine = engine;
+    if (engine === 'zero_cost') {
+      tabZeroCost.classList.add('active');
+      tabNativeVideo.classList.remove('active');
+      zeroCostControls.style.display = 'block';
+      nativeVideoControls.style.display = 'none';
+      btnGenerate.querySelector('span').textContent = '✨ Generate Video ($0 Free)';
+    } else {
+      tabNativeVideo.classList.add('active');
+      tabZeroCost.classList.remove('active');
+      zeroCostControls.style.display = 'none';
+      nativeVideoControls.style.display = 'block';
+      btnGenerate.querySelector('span').textContent = '🎥 Generate AI Video (Agnes Video 2.5)';
+    }
+  }
+
+  // Native Video Spec Listeners
+  if (videoDurationSlider) {
+    videoDurationSlider.addEventListener('input', (e) => {
+      videoDurationVal.textContent = `${e.target.value}s`;
+    });
+  }
+
+  document.querySelectorAll('[data-videosize]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-videosize]').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedVideoSize = btn.dataset.videosize;
+    });
+  });
+
+  document.querySelectorAll('[data-videoaspect]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-videoaspect]').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedVideoAspect = btn.dataset.videoaspect;
+    });
+  });
+
+  if (nativeMultiSceneToggle) {
+    nativeMultiSceneToggle.addEventListener('change', (e) => {
+      nativeSceneCountWrapper.style.display = e.target.checked ? 'block' : 'none';
+    });
+  }
+
+  if (nativeScenesSlider) {
+    nativeScenesSlider.addEventListener('input', (e) => {
+      nativeScenesVal.textContent = e.target.value;
+    });
+  }
 
   // Slider Listeners
   scenesSlider.addEventListener('input', (e) => {
@@ -145,15 +216,24 @@ document.addEventListener('DOMContentLoaded', () => {
     setLoading(true);
     resetDisplay();
 
+    const scenesCount = currentEngine === 'native_video'
+      ? (nativeMultiSceneToggle && nativeMultiSceneToggle.checked ? parseInt(nativeScenesSlider.value, 10) : 1)
+      : parseInt(scenesSlider.value, 10);
+
     const payload = {
       prompt: prompt,
-      scenes: parseInt(scenesSlider.value, 10),
+      engine: currentEngine,
+      scenes: scenesCount,
       duration: parseFloat(durationSlider.value),
       size: selectedSize,
       style: selectedStyle,
       fps: parseInt(fpsSelect.value, 10),
       enable_motion: motionToggle.checked,
       use_continuity: continuityToggle.checked,
+      video_seconds: videoDurationSlider ? videoDurationSlider.value : "5",
+      video_size: selectedVideoSize,
+      video_aspect_ratio: selectedVideoAspect,
+      video_mode: 'text',
       dry_run: dryRun,
     };
 
@@ -294,7 +374,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isLoading) {
       btnGenerate.innerHTML = `<span>⏳ Generating...</span>`;
     } else {
-      btnGenerate.innerHTML = `<span>✨ Generate Video ($0 Free)</span>`;
+      const label = currentEngine === 'native_video'
+        ? '🎥 Generate AI Video (Agnes Video 2.5)'
+        : '✨ Generate Video ($0 Free)';
+      btnGenerate.innerHTML = `<span>${label}</span>`;
     }
   }
 });

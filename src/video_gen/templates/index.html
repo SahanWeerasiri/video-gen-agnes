@@ -45,6 +45,27 @@
           <h2 class="panel-title"><span>🎨</span> Video Prompt & Settings</h2>
         </div>
 
+        <!-- Engine Selector -->
+        <div class="form-group">
+          <label class="form-label">Generation Engine</label>
+          <div class="engine-tabs">
+            <button type="button" class="engine-tab active" id="tabZeroCost" data-engine="zero_cost">
+              <div class="engine-header-row">
+                <div class="engine-icon-title"><span>✨</span> Zero-Cost Pipeline</div>
+                <span class="engine-tag free-tag">100% Free</span>
+              </div>
+              <div class="engine-desc">Agnes Flash 2.5 + Image 2.0 Flash + FFmpeg Ken Burns motion</div>
+            </button>
+            <button type="button" class="engine-tab" id="tabNativeVideo" data-engine="native_video">
+              <div class="engine-header-row">
+                <div class="engine-icon-title"><span>🎥</span> Agnes Video 2.5</div>
+                <span class="engine-tag ai-tag">AI Video</span>
+              </div>
+              <div class="engine-desc">Direct AI diffusion video with subject motion & physical realism</div>
+            </button>
+          </div>
+        </div>
+
         <!-- Prompt Input -->
         <div class="form-group">
           <label for="promptInput" class="form-label">Creative Prompt</label>
@@ -78,74 +99,131 @@
           </div>
         </div>
 
-        <!-- Scene Count Slider -->
-        <div class="form-group">
-          <div class="slider-header">
-            <label for="scenesSlider" class="form-label" style="margin-bottom:0;">Scene Count</label>
-            <span id="scenesVal" class="slider-val">4</span>
-          </div>
-          <input type="range" id="scenesSlider" class="range-input" min="1" max="6" value="4" step="1">
-        </div>
-
-        <!-- Scene Duration Slider -->
-        <div class="form-group">
-          <div class="slider-header">
-            <label for="durationSlider" class="form-label" style="margin-bottom:0;">Duration Per Scene</label>
-            <span id="durationVal" class="slider-val">4.0s</span>
-          </div>
-          <input type="range" id="durationSlider" class="range-input" min="2.0" max="6.0" value="4.0" step="0.5">
-        </div>
-
-        <!-- Resolution Selector -->
-        <div class="form-group">
-          <label class="form-label">Aspect Ratio & Resolution</label>
-          <div class="resolution-grid">
-            <div class="res-card active" data-size="1024x768">
-              <div class="res-ratio">4:3 Landscape</div>
-              <div class="res-dims">1024 × 768</div>
+        <!-- Zero-Cost Specific Controls -->
+        <div id="zeroCostControls">
+          <!-- Scene Count Slider -->
+          <div class="form-group">
+            <div class="slider-header">
+              <label for="scenesSlider" class="form-label" style="margin-bottom:0;">Scene Count</label>
+              <span id="scenesVal" class="slider-val">4</span>
             </div>
-            <div class="res-card" data-size="1024x1024">
-              <div class="res-ratio">1:1 Square</div>
-              <div class="res-dims">1024 × 1024</div>
-            </div>
-            <div class="res-card" data-size="768x1024">
-              <div class="res-ratio">3:4 Portrait</div>
-              <div class="res-dims">768 × 1024</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Frame Rate Selector -->
-        <div class="form-group" style="display:flex; justify-content:space-between; align-items:center;">
-          <label for="fpsSelect" class="form-label" style="margin-bottom:0;">Output Frame Rate</label>
-          <select id="fpsSelect" style="background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-subtle); padding:6px 12px; border-radius:10px; font-family:var(--font-mono); font-size:0.85rem;">
-            <option value="24" selected>24 FPS (Cinematic)</option>
-            <option value="30">30 FPS (Smooth)</option>
-          </select>
-        </div>
-
-        <!-- Motion & Continuity Toggles -->
-        <div class="form-group">
-          <div class="toggle-row">
-            <div>
-              <div class="toggle-label-text">Ken Burns Camera Motion</div>
-              <div class="toggle-sub">Dynamic zoom-in, pan-left, and cinematic movements</div>
-            </div>
-            <label class="switch">
-              <input type="checkbox" id="motionToggle" checked>
-              <span class="switch-slider"></span>
-            </label>
+            <input type="range" id="scenesSlider" class="range-input" min="1" max="6" value="4" step="1">
           </div>
 
-          <div class="toggle-row">
-            <div>
-              <div class="toggle-label-text">Visual Style Continuity</div>
-              <div class="toggle-sub">Anchor scene frames using image-to-image consistency</div>
+          <!-- Scene Duration Slider -->
+          <div class="form-group">
+            <div class="slider-header">
+              <label for="durationSlider" class="form-label" style="margin-bottom:0;">Duration Per Scene</label>
+              <span id="durationVal" class="slider-val">4.0s</span>
             </div>
-            <label class="switch">
-              <input type="checkbox" id="continuityToggle" checked>
-              <span class="switch-slider"></span>
-            </label>
+            <input type="range" id="durationSlider" class="range-input" min="2.0" max="6.0" value="4.0" step="0.5">
+          </div>
+
+          <!-- Resolution Selector -->
+          <div class="form-group">
+            <label class="form-label">Aspect Ratio & Resolution</label>
+            <div class="resolution-grid">
+              <div class="res-card active" data-size="1024x768">
+                <div class="res-ratio">4:3 Landscape</div>
+                <div class="res-dims">1024 × 768</div>
+              </div>
+              <div class="res-card" data-size="1024x1024">
+                <div class="res-ratio">1:1 Square</div>
+                <div class="res-dims">1024 × 1024</div>
+              </div>
+              <div class="res-card" data-size="768x1024">
+                <div class="res-ratio">3:4 Portrait</div>
+                <div class="res-dims">768 × 1024</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Frame Rate Selector -->
+          <div class="form-group" style="display:flex; justify-content:space-between; align-items:center;">
+            <label for="fpsSelect" class="form-label" style="margin-bottom:0;">Output Frame Rate</label>
+            <select id="fpsSelect" style="background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-subtle); padding:6px 12px; border-radius:10px; font-family:var(--font-mono); font-size:0.85rem;">
+              <option value="24" selected>24 FPS (Cinematic)</option>
+              <option value="30">30 FPS (Smooth)</option>
+            </select>
+          </div>
+
+          <!-- Motion & Continuity Toggles -->
+          <div class="form-group">
+            <div class="toggle-row">
+              <div>
+                <div class="toggle-label-text">Ken Burns Camera Motion</div>
+                <div class="toggle-sub">Dynamic zoom-in, pan-left, and cinematic movements</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="motionToggle" checked>
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+
+            <div class="toggle-row">
+              <div>
+                <div class="toggle-label-text">Visual Style Continuity</div>
+                <div class="toggle-sub">Anchor scene frames using image-to-image consistency</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="continuityToggle" checked>
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Native Agnes Video 2.5 Specific Controls -->
+        <div id="nativeVideoControls" style="display:none;">
+          <!-- Video Duration Slider -->
+          <div class="form-group">
+            <div class="slider-header">
+              <label for="videoDurationSlider" class="form-label" style="margin-bottom:0;">Video Duration (Agnes API: 4–12s)</label>
+              <span id="videoDurationVal" class="slider-val">5s</span>
+            </div>
+            <input type="range" id="videoDurationSlider" class="range-input" min="4" max="12" value="5" step="1">
+          </div>
+
+          <!-- Resolution Tier Grid -->
+          <div class="form-group">
+            <label class="form-label">Video Resolution Tier</label>
+            <div class="native-spec-grid">
+              <button type="button" class="spec-btn active" data-videosize="720P">720P (Fast)</button>
+              <button type="button" class="spec-btn" data-videosize="1080P">1080P HD</button>
+              <button type="button" class="spec-btn" data-videosize="1K">1K</button>
+              <button type="button" class="spec-btn" data-videosize="2K">2K QuadHD</button>
+            </div>
+          </div>
+
+          <!-- Aspect Ratio Grid -->
+          <div class="form-group">
+            <label class="form-label">Video Aspect Ratio</label>
+            <div class="native-aspect-grid">
+              <button type="button" class="spec-btn active" data-videoaspect="16:9">16:9 Widescreen</button>
+              <button type="button" class="spec-btn" data-videoaspect="9:16">9:16 Vertical/Shorts</button>
+              <button type="button" class="spec-btn" data-videoaspect="1:1">1:1 Square</button>
+            </div>
+          </div>
+
+          <!-- Multi-Scene Mode Toggle -->
+          <div class="form-group">
+            <div class="toggle-row">
+              <div>
+                <div class="toggle-label-text">Multi-Scene Native Assembly</div>
+                <div class="toggle-sub">Decompose into multiple AI video clips & stitch seamlessly with FFmpeg</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="nativeMultiSceneToggle">
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+            <div id="nativeSceneCountWrapper" style="display:none; margin-top:12px;">
+              <div class="slider-header">
+                <label for="nativeScenesSlider" class="form-label" style="margin-bottom:0;">Scenes to Generate & Stitch</label>
+                <span id="nativeScenesVal" class="slider-val">3</span>
+              </div>
+              <input type="range" id="nativeScenesSlider" class="range-input" min="2" max="5" value="3" step="1">
+            </div>
           </div>
         </div>
 

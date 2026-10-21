@@ -45,6 +45,8 @@ class TestServer(unittest.TestCase):
         self.assertIn("mock...2345", data["masked_key"])
         self.assertEqual(data["text_model"], "agnes-2.5-flash")
         self.assertEqual(data["image_model"], "agnes-image-2.0-flash")
+        self.assertEqual(data["video_model"], "agnes-video-2.5")
+        self.assertEqual(data["default_engine"], "zero_cost")
 
     def test_generate_missing_prompt(self) -> None:
         response = self.client.post(
@@ -70,6 +72,24 @@ class TestServer(unittest.TestCase):
         data = response.get_json()
         self.assertIn("task_id", data)
         self.assertEqual(data["status"], "queued")
+        mock_start.assert_called_once()
+
+    @patch("threading.Thread.start")
+    def test_generate_native_video_queues_task(self, mock_start: MagicMock) -> None:
+        response = self.client.post(
+            "/api/generate",
+            data=json.dumps({
+                "prompt": "Hyper-realistic ocean documentary",
+                "engine": "native_video",
+                "video_seconds": "8",
+                "video_size": "1080P",
+                "video_aspect_ratio": "16:9",
+            }),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 202)
+        data = response.get_json()
+        self.assertIn("task_id", data)
         mock_start.assert_called_once()
 
     def test_get_unknown_task_returns_404(self) -> None:
