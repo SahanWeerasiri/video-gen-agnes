@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agnes Studio - Zero-Cost AI Video Generator</title>
+  <meta name="description" content="Generate unlimited, cinematic videos at strictly $0 cost using Agnes AI Flash models and FFmpeg.">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+  <div class="app-container">
+
+    <!-- Header Navigation -->
+    <header class="app-header">
+      <div class="brand-wrapper">
+        <div class="brand-icon">🎬</div>
+        <div>
+          <h1 class="brand-title">Agnes Studio</h1>
+          <p class="brand-tag">Zero-Cost Cinematic Video Synthesis</p>
+        </div>
+      </div>
+
+      <div class="header-badges">
+        <div class="zero-cost-pill">
+          <span class="pulse-dot"></span>
+          <span>$0 Free & Unlimited Tier</span>
+        </div>
+        <div id="apiKeyStatus" class="api-status-badge">
+          <span>Checking API Key...</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Studio Grid -->
+    <main class="main-grid">
+
+      <!-- Left Column: Controls & Prompting -->
+      <section class="glass-panel" aria-label="Studio Controls">
+        <div class="panel-header">
+          <h2 class="panel-title"><span>🎨</span> Video Prompt & Settings</h2>
+        </div>
+
+        <!-- Prompt Input -->
+        <div class="form-group">
+          <label for="promptInput" class="form-label">Creative Prompt</label>
+          <div class="textarea-wrapper">
+            <textarea
+              id="promptInput"
+              class="prompt-textarea"
+              placeholder="Describe your scene or story concept in detail (e.g., A cybernetic tiger prowling through a rainy neon city at night)..."
+            ></textarea>
+          </div>
+
+          <div class="chips-label">Quick Inspiration Ideas:</div>
+          <div class="prompt-chips">
+            <button type="button" class="chip-btn" data-prompt="A futuristic silver sports car racing through neon rain reflections in Tokyo" data-style="Cyberpunk">🏎️ Cyber Car</button>
+            <button type="button" class="chip-btn" data-prompt="A cute red panda wearing a chef apron kneading dough in a cozy wooden bakery" data-style="Studio Ghibli">🥐 Panda Baker</button>
+            <button type="button" class="chip-btn" data-prompt="A majestic eagle soaring over sunlit snow-capped Alpine mountain ridges" data-style="Cinematic 8K">🦅 Mountain Eagle</button>
+            <button type="button" class="chip-btn" data-prompt="Astronaut discovering glowing bioluminescent crystals inside a Martian cavern" data-style="Sci-Fi Realistic">🚀 Mars Crystal</button>
+          </div>
+        </div>
+
+        <!-- Artistic Style Selector -->
+        <div class="form-group">
+          <label class="form-label">Visual Style</label>
+          <div class="style-pills">
+            <button type="button" class="style-pill active" data-style="Cinematic 8K">Cinematic 8K</button>
+            <button type="button" class="style-pill" data-style="Cyberpunk">Cyberpunk</button>
+            <button type="button" class="style-pill" data-style="Studio Ghibli">Studio Ghibli</button>
+            <button type="button" class="style-pill" data-style="Hyperrealistic">Photorealistic</button>
+            <button type="button" class="style-pill" data-style="Anime">Anime</button>
+            <button type="button" class="style-pill" data-style="Vintage Film">35mm Film</button>
+          </div>
+        </div>
+
+        <!-- Scene Count Slider -->
+        <div class="form-group">
+          <div class="slider-header">
+            <label for="scenesSlider" class="form-label" style="margin-bottom:0;">Scene Count</label>
+            <span id="scenesVal" class="slider-val">4</span>
+          </div>
+          <input type="range" id="scenesSlider" class="range-input" min="1" max="6" value="4" step="1">
+        </div>
+
+        <!-- Scene Duration Slider -->
+        <div class="form-group">
+          <div class="slider-header">
+            <label for="durationSlider" class="form-label" style="margin-bottom:0;">Duration Per Scene</label>
+            <span id="durationVal" class="slider-val">4.0s</span>
+          </div>
+          <input type="range" id="durationSlider" class="range-input" min="2.0" max="6.0" value="4.0" step="0.5">
+        </div>
+
+        <!-- Resolution Selector -->
+        <div class="form-group">
+          <label class="form-label">Aspect Ratio & Resolution</label>
+          <div class="resolution-grid">
+            <div class="res-card active" data-size="1024x768">
+              <div class="res-ratio">4:3 Landscape</div>
+              <div class="res-dims">1024 × 768</div>
+            </div>
+            <div class="res-card" data-size="1024x1024">
+              <div class="res-ratio">1:1 Square</div>
+              <div class="res-dims">1024 × 1024</div>
+            </div>
+            <div class="res-card" data-size="768x1024">
+              <div class="res-ratio">3:4 Portrait</div>
+              <div class="res-dims">768 × 1024</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Frame Rate Selector -->
+        <div class="form-group" style="display:flex; justify-content:space-between; align-items:center;">
+          <label for="fpsSelect" class="form-label" style="margin-bottom:0;">Output Frame Rate</label>
+          <select id="fpsSelect" style="background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-subtle); padding:6px 12px; border-radius:10px; font-family:var(--font-mono); font-size:0.85rem;">
+            <option value="24" selected>24 FPS (Cinematic)</option>
+            <option value="30">30 FPS (Smooth)</option>
+          </select>
+        </div>
+
+        <!-- Motion & Continuity Toggles -->
+        <div class="form-group">
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label-text">Ken Burns Camera Motion</div>
+              <div class="toggle-sub">Dynamic zoom-in, pan-left, and cinematic movements</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="motionToggle" checked>
+              <span class="switch-slider"></span>
+            </label>
+          </div>
+
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label-text">Visual Style Continuity</div>
+              <div class="toggle-sub">Anchor scene frames using image-to-image consistency</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="continuityToggle" checked>
+              <span class="switch-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="button-stack">
+          <button type="button" id="btnGenerate" class="btn btn-primary">
+            <span>✨ Generate Video ($0 Free)</span>
+          </button>
+          <button type="button" id="btnDryRun" class="btn btn-secondary">
+            <span>📋 Plan Storyboard Only (Dry Run)</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Right Column: Production Stage & Results -->
+      <section class="glass-panel" aria-label="Production Stage">
+        <div class="panel-header">
+          <h2 class="panel-title"><span>📽️</span> Production Stage</h2>
+        </div>
+
+        <!-- Empty State -->
+        <div id="stageEmpty" class="stage-empty-state">
+          <div class="empty-icon">🎬</div>
+          <h3 class="empty-title">Ready to Create</h3>
+          <p>Choose an idea or enter your prompt on the left, then click <strong>Generate Video</strong> to synthesize unlimited AI video for free.</p>
+        </div>
+
+        <!-- Live Progress Section -->
+        <div id="progressContainer" class="progress-container">
+          <div class="progress-header">
+            <span id="stageBadge" class="stage-badge">Initializing...</span>
+            <span id="progressPercent" class="progress-percent">0%</span>
+          </div>
+          <div class="progress-bar-track">
+            <div id="progressBarFill" class="progress-bar-fill"></div>
+          </div>
+
+          <!-- Real-time Console Log -->
+          <div id="logBox" class="log-box"></div>
+        </div>
+
+        <!-- Video Player Viewport -->
+        <div id="videoViewport" class="video-viewport">
+          <div class="video-player-wrapper">
+            <video id="videoElement" class="video-element" controls loop playsinline></video>
+          </div>
+          <div class="video-actions">
+            <span style="font-size:0.85rem; color:#34d399; font-weight:600;">✓ Video Synthesis Complete</span>
+            <a id="btnDownload" class="btn btn-secondary" style="padding:8px 16px; font-size:0.85rem;" download="video.mp4">
+              ⬇ Download MP4
+            </a>
+          </div>
+        </div>
+
+        <!-- Storyboard Scene Cards Gallery -->
+        <div id="storyboardGallery" class="storyboard-gallery">
+          <h3 class="gallery-title">Generated Scenes & Storyboard</h3>
+          <div id="scenesGrid" class="scenes-grid"></div>
+        </div>
+      </section>
+
+    </main>
+
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

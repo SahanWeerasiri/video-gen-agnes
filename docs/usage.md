@@ -14,7 +14,15 @@ This guide covers usage instructions, configuration parameters, and best practic
    ```
 3. An **Agnes AI Platform Account** and API key.
 
-### 1.2 Environment Setup
+### 1.2 Virtual Environment & Dependencies
+Set up the Python virtual environment (`.venv`):
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 1.3 Environment Setup
 Create a `.env` file in the project root:
 ```bash
 cp .env.example .env
@@ -27,7 +35,21 @@ AGNES_BASE_URL="https://apihub.agnes-ai.com/v1"
 
 ---
 
-## 2. CLI Reference
+## 2. Interactive Web Studio UI
+
+Launch the Web Studio interface:
+```bash
+python app.py
+```
+Open **http://localhost:5000** in your browser to:
+- Test creative ideas with 1-click prompt chips.
+- Adjust scenes, durations, resolution, and styles interactively.
+- Track real-time progress and logs.
+- Watch and download generated videos directly in your browser.
+
+---
+
+## 3. CLI Reference
 
 Run the video generation tool via Python module:
 ```bash

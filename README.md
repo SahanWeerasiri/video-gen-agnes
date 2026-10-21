@@ -2,6 +2,8 @@
 
 A modular, production-ready AI video generator built to achieve **unlimited video generation with strictly $0 cost**, utilizing the promotional free pricing of Agnes AI Flash models combined with local FFmpeg cinematic compilation.
 
+Includes both a **modern, responsive Web Studio UI** and a **rich CLI tool**.
+
 ---
 
 ## 💡 The $0 Zero-Cost Philosophy
@@ -47,7 +49,20 @@ This tool combines these two free endpoints with local FFmpeg to deliver unlimit
 * **Python 3.10+** (tested on Python 3.14)
 * **FFmpeg** installed on your system (`ffmpeg -version`)
 
-### 2. Configure Credentials
+### 2. Set Up Virtual Environment (`.venv`)
+```bash
+# Create virtual environment
+python3 -m venv .venv
+
+# Activate virtual environment
+source .venv/bin/activate  # On Linux/macOS
+# or .venv\Scripts\activate on Windows
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### 3. Configure Credentials
 Copy `.env.example` to `.env` and provide your Agnes API key:
 ```bash
 cp .env.example .env
@@ -58,7 +73,28 @@ AGNES_API_KEY=your_api_key_here
 AGNES_BASE_URL=https://apihub.agnes-ai.com/v1
 ```
 
-### 3. Generate Videos via CLI
+---
+
+## 🌐 Launch the Interactive Web Studio UI
+
+Start the local web server:
+```bash
+python app.py
+```
+Open **[http://localhost:5000](http://localhost:5000)** in your browser.
+
+### Web Studio Features
+* **Interactive Prompt Playground**: Auto-expanding prompt input with 1-click inspirational starter chips (Cyberpunk, Studio Ghibli, Nature Documentary, Sci-Fi).
+* **Visual Style Presets**: Quick pills for Cinematic 8K, Cyberpunk, Studio Ghibli, Photorealistic, Anime, and 35mm Vintage Film.
+* **Aspect Ratio Cards**: Instant switching between 4:3 Landscape (`1024x768`), 1:1 Square (`1024x1024`), and 3:4 Portrait (`768x1024`).
+* **Live Multi-Stage Tracker**: Real-time progress bar, stage transitions, and live terminal event stream.
+* **Integrated Player & Gallery**: HTML5 video playback with download button alongside a visual gallery displaying the generated frame for each scene!
+
+---
+
+## 💻 CLI Usage
+
+You can also run the generator directly from the command line:
 
 ```bash
 # Preview storyboard only (Dry run: no images generated)
@@ -73,9 +109,7 @@ python -m video_gen \
   --output-name "cyber_tiger.mp4"
 ```
 
----
-
-## 🛠️ CLI Options
+### CLI Options
 
 | Option | Default | Description |
 | :--- | :--- | :--- |
@@ -96,10 +130,10 @@ python -m video_gen \
 
 ## 🧪 Testing
 
-The test suite runs with 100% mocked dependencies — **no network calls are made and no API credits are consumed**:
+The unit test suite runs with 100% mocked dependencies — **no network calls are made and no API credits are consumed**:
 
 ```bash
-PYTHONPATH=src python3 -m unittest discover -s tests -p "test_*.py"
+PYTHONPATH=src python -m unittest discover -s tests -p "test_*.py"
 ```
 
 ---
@@ -108,6 +142,9 @@ PYTHONPATH=src python3 -m unittest discover -s tests -p "test_*.py"
 
 ```
 .
+├── app.py                 # Web application launcher (python app.py)
+├── requirements.txt       # Project dependencies (requests, flask)
+├── .venv/                 # Local Python virtual environment
 ├── src/video_gen/
 │   ├── __init__.py        # Package exports & version
 │   ├── config.py          # Configuration & environment loading
@@ -116,9 +153,11 @@ PYTHONPATH=src python3 -m unittest discover -s tests -p "test_*.py"
 │   ├── frame_generator.py # agnes-image-2.0-flash frame generator with continuity
 │   ├── compiler.py        # FFmpeg Ken Burns motion compilation
 │   ├── pipeline.py        # End-to-end orchestration pipeline
+│   ├── server.py          # Flask REST API & Web Server
 │   ├── cli.py             # Rich CLI interface
-│   └── __main__.py        # Module entrypoint (python -m video_gen)
-├── tests/                 # Unit test suite (fully mocked)
+│   ├── static/            # Frontend assets (style.css, app.js)
+│   └── templates/         # Web Studio UI (index.html)
+├── tests/                 # Unit test suite (35 tests, fully mocked)
 ├── docs/
 │   ├── adr/               # Architecture Decision Records
 │   │   ├── README.md

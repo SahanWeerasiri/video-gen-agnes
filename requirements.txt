@@ -1,0 +1,9 @@
+# ==============================================================================
+# Agnes AI Zero-Cost Video Generator Requirements
+# ==============================================================================
+
+# HTTP client for Agnes AI API communications
+requests>=2.31.0
+
+# Lightweight web server for the interactive UI
+flask>=3.0.0
