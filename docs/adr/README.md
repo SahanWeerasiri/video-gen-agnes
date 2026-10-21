@@ -4,7 +4,7 @@ Architecture Decision Records (ADRs) capture important architectural choices mad
 
 ## Index of Decisions
 
-* [ADR-0001: Record Architecture Decisions](0001-record-architecture-decisions.md)
+* [ADR-0001: Zero-Cost Video Generation Pipeline using Agnes Flash Models and FFmpeg](0001-zero-cost-video-generation-pipeline.md)
 
 ---
 
