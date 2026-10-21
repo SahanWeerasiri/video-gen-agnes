@@ -189,5 +189,7 @@ print(f"Total duration: {native_result.total_duration} seconds")
 ## 5. Rate Limits & Error Handling
 
 - **Rate Limits (HTTP 429)**: The client automatically retries up to 5 times using exponential backoff with full jitter. If you encounter rate limits on a free account, the generator will wait and resume without failing your job.
+- **Image Queue Delays (HTTP 503)**: During traffic spikes on promotional endpoints, temporary `"image queue is full"` responses are automatically retried with backoff.
+- **Billing & Account Quota (HTTP 403 `insufficient_user_quota`)**: Unlike text and image Flash models ($0 promotional price), `agnes-video-2.5` requires paid account balance ($0.025–$0.055/second). If your account balance is $0, the API returns `HTTP 403: insufficient_user_quota`. The client intercepts this error and advises you to switch to the 100% free **Zero-Cost Engine** (`zero_cost`).
 - **Visual Continuity**: When continuity is enabled (default in Zero-Cost mode), scene 2+ provides the prior scene's image URL into `extra_body.image` of `agnes-image-2.0-flash` ($0 promotional price), keeping subjects and color palettes coherent.
 - **Asynchronous Task Polling**: For Agnes Video 2.5, tasks are created via `POST /v1/videos` and queried via `GET /agnesapi` every 2 seconds with automatic progress reporting (0–100%) and error capture.

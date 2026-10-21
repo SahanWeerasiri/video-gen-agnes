@@ -13,12 +13,18 @@ Includes both a **modern, responsive Web Studio UI** with real-time progress tra
 | Feature | Zero-Cost Engine (`zero_cost`) | Native Agnes Video Engine (`native_video`) |
 | :--- | :--- | :--- |
 | **Primary Model** | `agnes-2.5-flash` + `agnes-image-2.0-flash` | `agnes-video-2.5` |
-| **Pricing / Cost** | **Strictly $0** (Free promotional tiers) | Assumed free / API credits |
+| **Pricing / Billing** | **Strictly $0 Unlimited** (100% Free promotional pricing) | **Requires Paid Account Quota** ($0.025–$0.055/sec) |
 | **Motion Synthesis**| Ken Burns 2D/3D camera zoom & pan via local FFmpeg | Native video diffusion subject & camera motion |
 | **Assembly Mode** | Sequential keyframes + continuity anchoring | Single continuous clip (4–12s) or multi-scene stitched film |
 | **Resolutions** | 1024x768, 1024x1024, 768x1024 | 720P, 1080P, 1K, 2K |
 | **Aspect Ratios** | 4:3, 1:1, 3:4 | 16:9, 9:16, 1:1, 4:3, 21:9 |
 | **Hardware Reqs** | Zero local GPU needed; runs on any CPU with FFmpeg | Zero local GPU needed (cloud diffusion) |
+
+> [!IMPORTANT]
+> **Billing & Quota Notice**:  
+> Live testing confirms that `agnes-video-2.5` strictly enforces paid billing. Accounts with a $0 balance will receive:  
+> `Agnes API Error (status=403): {"code":"insufficient_user_quota","message":"Insufficient user quota, remaining: ＄0.000000"}`  
+> If you have an unfunded account, use the default **Zero-Cost Engine** (`zero_cost`), which is **100% free with unlimited generations** via promotional $0 pricing on Agnes text and image APIs!
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -159,12 +165,15 @@ PYTHONPATH=src python -m unittest discover -s tests -p "test_*.py"
 │   ├── cli.py             # Rich CLI interface
 │   ├── static/            # Frontend assets (style.css, app.js)
 │   └── templates/         # Web Studio UI (index.html)
-├── tests/                 # Unit test suite (46 tests, fully mocked)
+├── tests/                 # Unit test suite (47 tests, fully mocked)
 ├── docs/
 │   ├── adr/               # Architecture Decision Records
 │   │   ├── README.md
 │   │   ├── 0001-zero-cost-video-generation-pipeline.md
-│   │   └── 0002-native-agnes-video-engine.md
+│   │   ├── 0002-native-agnes-video-engine.md
+│   │   ├── 0003-deterministic-video-timing-and-ffmpeg-assembly.md
+│   │   ├── 0004-interactive-web-studio-and-asynchronous-task-architecture.md
+│   │   └── 0005-api-quota-enforcement-and-graceful-error-handling.md
 │   ├── agnes/             # Agnes AI API documentation
 │   ├── architecture.md    # System architecture specification
 │   └── usage.md           # User manual and advanced examples
@@ -177,5 +186,8 @@ PYTHONPATH=src python -m unittest discover -s tests -p "test_*.py"
 ## 📖 Architecture & Documentation
 * [ADR-0001: Zero-Cost Video Generation Pipeline](docs/adr/0001-zero-cost-video-generation-pipeline.md)
 * [ADR-0002: Dual-Engine Architecture Supporting Native Agnes Video 2.5](docs/adr/0002-native-agnes-video-engine.md)
+* [ADR-0003: Deterministic Video Timing and FFmpeg ZoomPan Single-Frame Assembly](docs/adr/0003-deterministic-video-timing-and-ffmpeg-assembly.md)
+* [ADR-0004: Interactive Web Studio and Asynchronous Task Architecture](docs/adr/0004-interactive-web-studio-and-asynchronous-task-architecture.md)
+* [ADR-0005: API Quota Enforcement and Graceful Error Handling](docs/adr/0005-api-quota-enforcement-and-graceful-error-handling.md)
 * [System Architecture](docs/architecture.md)
 * [Usage Guide & Manual](docs/usage.md)
