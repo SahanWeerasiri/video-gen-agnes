@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "video-gen-agnes"
+version = "0.1.0"
+description = "Zero-Cost AI Video Generator using Agnes AI Flash models and FFmpeg"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.31.0",
+    "flask>=3.0.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
