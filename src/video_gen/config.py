@@ -59,10 +59,12 @@ def parse_env_file(env_path: Path) -> dict[str, str]:
 def load_config(
     api_key: Optional[str] = None,
     base_url: Optional[str] = None,
-    image_size: str = "1024x768",
-    fps: int = 24,
-    seconds_per_scene: float = 4.0,
-    output_dir: Path = Path("output"),
+    text_model: Optional[str] = None,
+    image_model: Optional[str] = None,
+    image_size: Optional[str] = None,
+    fps: Optional[int] = None,
+    seconds_per_scene: Optional[float] = None,
+    output_dir: Optional[Path] = None,
     env_file: Optional[Path] = None,
 ) -> PipelineConfig:
     """Load and validate configuration from parameters, environment variables, or .env file."""
@@ -84,11 +86,48 @@ def load_config(
         or file_vars.get("AGNES_BASE_URL", "https://apihub.agnes-ai.com/v1")
     ).rstrip("/")
 
+    resolved_text_model = (
+        text_model
+        or os.environ.get("AGNES_TEXT_MODEL")
+        or file_vars.get("AGNES_TEXT_MODEL", "agnes-2.5-flash")
+    )
+
+    resolved_image_model = (
+        image_model
+        or os.environ.get("AGNES_IMAGE_MODEL")
+        or file_vars.get("AGNES_IMAGE_MODEL", "agnes-image-2.0-flash")
+    )
+
+    resolved_image_size = (
+        image_size
+        or os.environ.get("DEFAULT_IMAGE_SIZE")
+        or file_vars.get("DEFAULT_IMAGE_SIZE", "1024x768")
+    )
+
+    raw_fps = fps or os.environ.get("DEFAULT_FPS") or file_vars.get("DEFAULT_FPS", 24)
+    resolved_fps = int(raw_fps)
+
+    raw_duration = (
+        seconds_per_scene
+        or os.environ.get("DEFAULT_SCENE_DURATION")
+        or file_vars.get("DEFAULT_SCENE_DURATION", 4.0)
+    )
+    resolved_duration = float(raw_duration)
+
+    raw_out = (
+        output_dir
+        or os.environ.get("OUTPUT_DIR")
+        or file_vars.get("OUTPUT_DIR", "output")
+    )
+    resolved_output_dir = Path(raw_out)
+
     return PipelineConfig(
         api_key=resolved_key,
         base_url=resolved_base_url,
-        image_size=image_size,
-        fps=fps,
-        seconds_per_scene=seconds_per_scene,
-        output_dir=output_dir,
+        text_model=resolved_text_model,
+        image_model=resolved_image_model,
+        image_size=resolved_image_size,
+        fps=resolved_fps,
+        seconds_per_scene=resolved_duration,
+        output_dir=resolved_output_dir,
     )
